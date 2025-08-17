@@ -6,7 +6,7 @@ import string
 from collections import Counter
 
 class EmailClassifier:
-    """Advanced Email Classification System with Improved Logic"""
+    """Advanced Email Classification System with Custom Risk Levels"""
     
     def __init__(self):
         # Enhanced classification categories with better keywords
@@ -82,9 +82,7 @@ class EmailClassifier:
         }
     
     def analyze_email(self, email_text):
-        """
-        Improved email analysis with proper category distribution
-        """
+        """Improved email analysis with custom risk levels"""
         if not email_text or not email_text.strip():
             return self._create_result('unknown', 0.0, {}, [], {})
         
@@ -100,7 +98,7 @@ class EmailClassifier:
         pattern_scores = self._pattern_classification(original_text)
         context_scores = self._context_classification(original_text, features)
         
-        # Combine all scoring methods with improved logic
+        # Combine all scoring methods
         final_scores = self._intelligent_score_combination(
             keyword_scores, pattern_scores, context_scores, features
         )
@@ -108,9 +106,6 @@ class EmailClassifier:
         # Determine primary category and confidence
         primary_category = max(final_scores.items(), key=lambda x: x[1])[0]
         confidence = final_scores[primary_category]
-        
-        # Advanced risk assessment
-        risk_level = self._assess_risk(primary_category, confidence, features)
         
         # Find specific indicators
         indicators = self._find_indicators(email_text)
@@ -229,7 +224,7 @@ class EmailClassifier:
         return scores
     
     def _context_classification(self, text, features):
-        """Context-based classification using email structure"""
+        """Context-based classification"""
         scores = {category: 0.0 for category in self.categories.keys()}
         
         # Professional email indicators
@@ -262,7 +257,7 @@ class EmailClassifier:
         return scores
     
     def _intelligent_score_combination(self, keyword_scores, pattern_scores, context_scores, features):
-        """Intelligently combine scores with context awareness"""
+        """Intelligently combine scores"""
         combined = {category: 0.0 for category in self.categories.keys()}
         
         # Weighted combination
@@ -272,9 +267,6 @@ class EmailClassifier:
                 pattern_scores[category] * 0.4 +
                 context_scores[category] * 0.2
             )
-        
-        # Apply contextual adjustments
-        combined = self._apply_contextual_adjustments(combined, features)
         
         # Ensure minimum threshold for not_spam
         if all(score < 0.2 for score in combined.values()):
@@ -287,40 +279,56 @@ class EmailClassifier:
         
         return combined
     
-    def _apply_contextual_adjustments(self, scores, features):
-        """Apply contextual logic to improve accuracy"""
-        # If very short and urgent, likely spam
-        if features['word_count'] < 20 and features['exclamation_count'] > 3:
-            scores['spam'] *= 1.5
-        
-        # If long and formal, likely not spam
-        if features['word_count'] > 50 and features['exclamation_count'] <= 2:
-            scores['not_spam'] *= 1.3
-        
-        # If has unsubscribe and moderate length, likely newsletter
-        if features['word_count'] > 80:
-            scores['newsletter'] *= 1.2
-        
-        return scores
-    
     def _assess_risk(self, category, confidence, features):
-        """Enhanced risk assessment"""
-        high_risk_indicators = [
-            category in ['spam', 'phishing'],
-            features.get('money_mentions', 0) > 0,
-            features.get('exclamation_count', 0) > 8,
-            features.get('caps_ratio', 0) > 0.5
-        ]
+        """
+        CUSTOM RISK LEVELS BY CATEGORY AND PERCENTAGE!
+        Modify these percentages to change when HIGH/MEDIUM/LOW risk appears
+        """
         
-        medium_risk_indicators = [
-            category == 'promotional',
-            features.get('url_count', 0) > 3,
-            features.get('exclamation_count', 0) > 4
-        ]
+        # 🎯 CUSTOMIZE THESE PERCENTAGES FOR EACH CATEGORY:
+        risk_thresholds = {
+            'spam': {
+                'high': 70,    # 70%+ confidence = HIGH risk
+                'medium': 40,  # 40-69% confidence = MEDIUM risk
+                'low': 0       # Below 40% = LOW risk
+            },
+            'phishing': {
+                'high': 60,    # 60%+ confidence = HIGH risk (more sensitive)
+                'medium': 30,  # 30-59% confidence = MEDIUM risk
+                'low': 0       # Below 30% = LOW risk
+            },
+            'promotional': {
+                'high': 85,    # 85%+ confidence = HIGH risk
+                'medium': 50,  # 50-84% confidence = MEDIUM risk
+                'low': 0       # Below 50% = LOW risk
+            },
+            'not_spam': {
+                'high': 95,    # 95%+ confidence = HIGH risk (very safe)
+                'medium': 80,  # 80-94% confidence = MEDIUM risk
+                'low': 0       # Below 80% = LOW risk
+            },
+            'newsletter': {
+                'high': 90,    # 90%+ confidence = HIGH risk
+                'medium': 60,  # 60-89% confidence = MEDIUM risk
+                'low': 0       # Below 60% = LOW risk
+            },
+            'social': {
+                'high': 80,    # 80%+ confidence = HIGH risk
+                'medium': 50,  # 50-79% confidence = MEDIUM risk
+                'low': 0       # Below 50% = LOW risk
+            }
+        }
         
-        if sum(high_risk_indicators) >= 2 or (category in ['spam', 'phishing'] and confidence > 70):
+        # Get thresholds for this category
+        thresholds = risk_thresholds.get(category, risk_thresholds['spam'])
+        
+        # Convert confidence to percentage if needed
+        confidence_percent = confidence * 100 if confidence <= 1 else confidence
+        
+        # Determine risk level based on confidence thresholds
+        if confidence_percent >= thresholds['high']:
             return 'high'
-        elif sum(medium_risk_indicators) >= 2 or confidence > 60:
+        elif confidence_percent >= thresholds['medium']:
             return 'medium'
         else:
             return 'low'
